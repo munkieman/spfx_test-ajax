@@ -27,6 +27,19 @@ export default class SpfxTestAjaxWebPart extends BaseClientSideWebPart<ISpfxTest
     let folderName = "";
     let subfolderName = "";
     let siteTitle = this.context.pageContext.web.title;
+    var folderNamePrev = "";
+    var subFolderNamePrev = "";
+    var sfCount = 1;
+    var fCount = 1;
+    var folderID = "";
+    var folderDoc = "";
+    var subFolderGroupID = "";
+    var subFolderID = "";
+    var subFolderDoc = "";
+    var folderString = "";
+    var subFolderString = "";  
+    var docFlag = false;
+    let tabNum = 1;
 
     let bootstrapCssURL = "https://cdn.jsdelivr.net/npm/bootstrap@3.3.7/dist/css/bootstrap.min.css";
     let fontawesomeCssURL = "https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.11.2/css/regular.min.css";
@@ -67,7 +80,25 @@ export default class SpfxTestAjaxWebPart extends BaseClientSideWebPart<ISpfxTest
             //let subfolderID = item.Knowledge_Subfolder.WssId;
           }
           let tax_len=item.TaxCatchAll.results.length;
-
+/*
+          for (var field in item) {
+            // If it's the field we're interested in....
+            if (item.hasOwnProperty(field) && field === ) {
+                if (obj[field] !== null) {
+                    // ... get the WssId from the field ...
+                    var thisId = obj[field].WssId;
+                    // ... and loop through the TaxCatchAll data to find the matching Term
+                    for (var i = 0; i < obj.TaxCatchAll.length; i++) {
+                        if (obj.TaxCatchAll[i].ID === thisId) {
+                            // Augment the fieldName object with the Term value
+                            obj[field].Term = obj.TaxCatchAll[i].Term;
+                            return obj[field];
+                        }
+                    }
+                }
+            }
+          }     
+*/
           for (var i = 0; i < tax_len; i++) {
             //console.log("taxcatchall ID="+item.TaxCatchAll.results[i].ID);
             switch(item.TaxCatchAll.results[i].ID){
@@ -83,9 +114,32 @@ export default class SpfxTestAjaxWebPart extends BaseClientSideWebPart<ISpfxTest
             }
           }
           console.log("TeamName="+teamName+" Foldername="+folderName);
-          $('#folders').append('<div class="text-dark">'+folderName+'</div>');
-          //$('#medical').append('<a class="dropdown-item" href="#">'+item+'</a>');
-        })        
+
+          if (folderName !== folderNamePrev) {
+            // ***** Setup Parent Folder 
+            let folderTxt =  'knTab' + tabNum + '-Folder' + fCount;
+            //console.log("powerUser="+PowerUser);
+            folderDoc = folderTxt + "Doc";
+            folderString = '<div class="card documentFolder">' +
+                '<a class="card-link accordion-toggle" data-toggle="collapse" data-parent="#knLibrary' + tabNum + '" href="#' + folderTxt + '" style="text-decoration:none">' +
+                '<div class="card-header">' +
+                //'<div class="badge badge-info" id="'+folderID+'Count"></div>' +
+                '<h5 class="folderTitle">' + folderName + '</h5>' +
+                '</div>' +
+                '</a>' +
+                '<div id="' + folderTxt + '" class="collapse docList">' +
+                '<div class="card-body" id="' + folderTxt + 'rootPanel">' +
+                '<div id="' + folderDoc + '">' +
+                '</div>' +
+                '</div>' +
+                '</div>' +
+                '</div>';                           
+
+            $('#folders').append(folderString);                                                           
+            fCount++;
+            folderNamePrev = folderName;
+          }
+        });       
       },
       error: function(Error){
         alert(JSON.stringify(Error));
@@ -100,7 +154,26 @@ export default class SpfxTestAjaxWebPart extends BaseClientSideWebPart<ISpfxTest
               <span class="${ styles.title }">Welcome to SharePoint!</span>
               <p class="${ styles.subTitle }">Customize SharePoint experiences using Web Parts.</p>
               <p class="${ styles.description }">${escape(this.properties.description)}</p>
-              <div id="folders"></div>
+              <div class="newLoader"><div id="docLoader"></div></div>
+
+              <!-- ***** Left Container - Navigation Tabs ***** -->
+              <div id="knDocs">        
+                  <div class="tabHeader w-100 p-1">   
+                      <div class="scroller scroller-left mt-2"><i class="fa fa-chevron-left"></i></div>
+                      <div class="scroller scroller-right mt-2"><i class="fa fa-chevron-right"></i></div>
+                      <div class="customTabContainer"> 
+                          <nav class="nav nav-pills list mt-2" role="tablist" id="TabNames"></nav>
+                      </div>
+                  </div>
+        
+                  <div class="tab-content documentSection" id="TabContent"> 
+                    <div id="folders"></div>        
+                  </div>  
+                          
+                  <div class="documentViewer">            
+                      <iframe id="docViewer" src=""></iframe>
+                  </div>                            
+              </div>              
             </div>
           </div>
         </div>
