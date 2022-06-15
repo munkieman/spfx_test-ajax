@@ -22,6 +22,22 @@ export interface ISpfxTestAjaxWebPartProps {
 
 export default class SpfxTestAjaxWebPart extends BaseClientSideWebPart<ISpfxTestAjaxWebPartProps> {
 
+  public sortReponse(data: any)
+  {
+      var sorted = [];
+      $(data).each(function(k, v) {
+          for(var key in v) {
+              sorted.push({key: key, value: v[key]})
+          }
+      });
+  
+      return sorted.sort(function(a, b){
+          if (a.value < b.value) return -1;
+          if (a.value > b.value) return 1;
+          return 0;
+      });
+  }
+  
   public render(): void {
     let teamName = "";
     let folderName = "";
@@ -46,38 +62,34 @@ export default class SpfxTestAjaxWebPart extends BaseClientSideWebPart<ISpfxTest
     SPComponentLoader.loadCss(bootstrapCssURL);
     SPComponentLoader.loadCss(fontawesomeCssURL);
 
-    let query = "<Query>"+
-                    "<Where>"+                   
-                        "<Or>"+                           
-                            "<Contains><FieldRef Name='Knowledge_Team'/><Value Type='Text'>'Process Design'</Value></Contains>" +
-                            "<Or>" +
-                                "<Contains><FieldRef Name='Knowledge_SharedWith'/><Value Type='Text'>'Process Design'</Value></Contains>" + 
-                                //"<Contains><FieldRef Name='Knowledge_SharedWith'/><Value Type='Text'>"+tabName+"</Value></Contains>"+
-                            "</Or>" +
-                        "</Or>"+
-                    "</Where>"+
-                    "<OrderBy>" +
-                        "<FieldRef Name='Knowledge_Folder' Ascending='True' />"+
-                        "<FieldRef Name='Knowledge_SubFolder' Ascending='True' />"+
-                    "</OrderBy>"+
-                "</Query>";
-    let data = { 'query' :{'__metadata': { 'type': 'SP.CamlQuery' }, 'ViewXml': query}};
-
     $.ajax ({
-      url:this.context.pageContext.web.absoluteUrl+"/_api/web/lists/GetByTitle('Policies')/items?$select=*,ID,TaxCatchAll/ID,TaxCatchAll/Term&$expand=TaxCatchAll", //?$filter=EntityPropertyName eq 'Medicals'",
+      url:this.context.pageContext.web.absoluteUrl+"/_api/web/lists/GetByTitle('Policies')/items?$select=*,FileLeafRef,TaxCatchAll/ID,TaxCatchAll/Term&$expand=TaxCatchAll,File", //?$filter=EntityPropertyName eq 'Medicals'",
       type:"GET",
-      data: JSON.stringify(data), 
       headers:{"accept": "application/json;odata=verbose"},
       success: function(data) {
         console.log(data.d.results);
+        //let results=this.sortReponse(data);
         let results=data.d.results;
+
+        /*
+        let sorted = [];
+        $(results).each(function(k, v) {
+            for(var key in v) {
+                sorted.push({key: key, value: v[key]})
+            }
+        });
+        sorted.sort();
+        console.log(sorted);
+        */
+       
         //_api/web/lists/getbytitle('TaxonomyHiddenList')/items?$filter=ID eq $select=ID,Title
-        $.each(results,function(index,item){
-          let teamID = item.Knowledge_Team.WssId;
-          let folderID = item.Knowledge_Folder.WssId;
-          if(item.Knowledge_Subfolder !== null){
-            alert("data in subfolder");
-            //let subfolderID = item.Knowledge_Subfolder.WssId;
+        $.each(results, function (index, item) {
+        //$.each(results,function(index,item){
+          let teamWssID = item.Knowledge_Team.WssId;
+          let folderWssID = item.Knowledge_Folder.WssId;
+          if(item.Knowledge_SubFolder !== null){
+            //alert("data in subfolder");
+            //let subfolderWssID = item.Knowledge_SubFolder.WssId;
           }
           let tax_len=item.TaxCatchAll.results.length;
 /*
@@ -102,39 +114,36 @@ export default class SpfxTestAjaxWebPart extends BaseClientSideWebPart<ISpfxTest
           for (var i = 0; i < tax_len; i++) {
             //console.log("taxcatchall ID="+item.TaxCatchAll.results[i].ID);
             switch(item.TaxCatchAll.results[i].ID){
-              case teamID:
+              case teamWssID:
                 teamName = item.TaxCatchAll.results[i].Term;
                 break;
-              case folderID:
+              case folderWssID:
                 folderName = item.TaxCatchAll.results[i].Term;
                 break;
-              //case subfolderID:
+              //case subfolderWssID:
               //  subfolderName = item.TaxCatchAll.results[i].Term;
               //  break;
             }
           }
           console.log("TeamName="+teamName+" Foldername="+folderName);
-
+          
           if (folderName !== folderNamePrev) {
             // ***** Setup Parent Folder 
-            let folderTxt =  'knTab' + tabNum + '-Folder' + fCount;
+            let folderTxt =  'dcTab' + tabNum + '-Folder' + fCount;
             //console.log("powerUser="+PowerUser);
             folderDoc = folderTxt + "Doc";
-            folderString = '<div class="card documentFolder">' +
-                '<a class="card-link accordion-toggle" data-toggle="collapse" data-parent="#knLibrary' + tabNum + '" href="#' + folderTxt + '" style="text-decoration:none">' +
-                '<div class="card-header">' +
-                //'<div class="badge badge-info" id="'+folderID+'Count"></div>' +
-                '<h5 class="folderTitle">' + folderName + '</h5>' +
-                '</div>' +
-                '</a>' +
-                '<div id="' + folderTxt + '" class="collapse docList">' +
-                '<div class="card-body" id="' + folderTxt + 'rootPanel">' +
-                '<div id="' + folderDoc + '">' +
-                '</div>' +
-                '</div>' +
-                '</div>' +
-                '</div>';                           
-
+            folderString = '<div class="panel panel-default">' +
+                              '<div class="panel-heading">' +
+                                '<h4 class="panel-title">' +
+                                  '<a data-toggle="collapse" data-parent="#accordion" href="#'+ folderTxt +'">'+
+                                    '<span class="glyphicon glyphicon-menu-right text-success"></span> '+folderName+            
+                                  '</a>'+
+                                '</h4>'+
+                              '</div>'+
+                            '<div id="'+ folderTxt +'" class="panel-collapse collapse in">'+
+                              '<div class="panel-body">Document</div>'+
+                            '</div>'+
+                          '</div>'                           
             $('#folders').append(folderString);                                                           
             fCount++;
             folderNamePrev = folderName;
@@ -154,26 +163,23 @@ export default class SpfxTestAjaxWebPart extends BaseClientSideWebPart<ISpfxTest
               <span class="${ styles.title }">Welcome to SharePoint!</span>
               <p class="${ styles.subTitle }">Customize SharePoint experiences using Web Parts.</p>
               <p class="${ styles.description }">${escape(this.properties.description)}</p>
-              <div class="newLoader"><div id="docLoader"></div></div>
-
-              <!-- ***** Left Container - Navigation Tabs ***** -->
-              <div id="knDocs">        
-                  <div class="tabHeader w-100 p-1">   
-                      <div class="scroller scroller-left mt-2"><i class="fa fa-chevron-left"></i></div>
-                      <div class="scroller scroller-right mt-2"><i class="fa fa-chevron-right"></i></div>
-                      <div class="customTabContainer"> 
-                          <nav class="nav nav-pills list mt-2" role="tablist" id="TabNames"></nav>
-                      </div>
+              
+              <div class="panel-group" id="accordion">
+                <div class="panel panel-default">
+                  <div class="panel-heading">
+                    <h4 class="panel-title">
+                      <a data-toggle="collapse" data-parent="#accordion" href="#collapseTwo">
+                        <span class="glyphicon glyphicon-menu-right text-info"></span> Pay by PayPal            
+                      </a>
+                    </h4>
                   </div>
-        
-                  <div class="tab-content documentSection" id="TabContent"> 
-                    <div id="folders"></div>        
-                  </div>  
-                          
-                  <div class="documentViewer">            
-                      <iframe id="docViewer" src=""></iframe>
-                  </div>                            
-              </div>              
+                  <div id="collapseTwo" class="panel-collapse collapse">
+                    <div class="panel-body">Pay Pal</div>
+                  </div>
+                </div> 
+                <div id='folders'/>                
+              </div>
+
             </div>
           </div>
         </div>
