@@ -16,8 +16,6 @@ import * as $ from 'jquery';
 import * as React from 'react';
 require('bootstrap');
 
-let folderWssID:any[];
-
 export interface ISpfxTestAjaxWebPartProps {
   description: string;
 }
@@ -27,6 +25,7 @@ export default class SpfxTestAjaxWebPart extends BaseClientSideWebPart<ISpfxTest
   public render(): void {
     let teamName = "";
     let folderName = "";
+    let folderWssID: string[];
     let subfolderName = "";
     let siteTitle = this.context.pageContext.web.title;
     var folderNamePrev = "";
@@ -42,7 +41,7 @@ export default class SpfxTestAjaxWebPart extends BaseClientSideWebPart<ISpfxTest
     var subFolderString = "";  
     var docFlag = false;
     let tabNum = 1;
-
+    let count = 0;
     let bootstrapCssURL = "https://cdn.jsdelivr.net/npm/bootstrap@3.3.7/dist/css/bootstrap.min.css";
     let fontawesomeCssURL = "https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.11.2/css/regular.min.css";
     SPComponentLoader.loadCss(bootstrapCssURL);
@@ -80,7 +79,7 @@ export default class SpfxTestAjaxWebPart extends BaseClientSideWebPart<ISpfxTest
         $.each(results, function (index, item) {
 
           let teamWssID = item.Knowledge_Team.WssId;
-          folderWssID=item.Knowledge_Folder.WssId;
+          this.folderWssID=item.Knowledge_Folder.WssId;
           
           if(item.Knowledge_SubFolder !== null){
             //alert("data in subfolder");
@@ -88,6 +87,7 @@ export default class SpfxTestAjaxWebPart extends BaseClientSideWebPart<ISpfxTest
           }
 
           let tax_len=item.TaxCatchAll.results.length;
+          console.log("folder id="+this.folderWssID);
 
 /*          
           for (var i = 0; i < tax_len; i++) {
@@ -128,14 +128,18 @@ export default class SpfxTestAjaxWebPart extends BaseClientSideWebPart<ISpfxTest
             folderNamePrev = folderName;
           }
 */
-        });       
+          //count++;
+        });
+        let folderLen = this.folderWssID.length;  
+        console.log('folder length='+folderLen);     
       },
       error: function(Error){
         alert(JSON.stringify(Error));
       }
     }); 
-    //console.log('folder length='+folderWssID.length);
     
+    //folderWssID.sort();
+
     //for (var i = 0; i < folderWssID.length; i++) {
     //  $('#folders').append(folderWssID[i]); 
     //}
