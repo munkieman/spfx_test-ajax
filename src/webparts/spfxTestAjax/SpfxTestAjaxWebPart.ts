@@ -16,27 +16,13 @@ import * as $ from 'jquery';
 import * as React from 'react';
 require('bootstrap');
 
+let folderWssID:any[];
+
 export interface ISpfxTestAjaxWebPartProps {
   description: string;
 }
 
 export default class SpfxTestAjaxWebPart extends BaseClientSideWebPart<ISpfxTestAjaxWebPartProps> {
-
-  public sortReponse(data: any)
-  {
-      var sorted = [];
-      $(data).each(function(k, v) {
-          for(var key in v) {
-              sorted.push({key: key, value: v[key]})
-          }
-      });
-  
-      return sorted.sort(function(a, b){
-          if (a.value < b.value) return -1;
-          if (a.value > b.value) return 1;
-          return 0;
-      });
-  }
   
   public render(): void {
     let teamName = "";
@@ -62,55 +48,48 @@ export default class SpfxTestAjaxWebPart extends BaseClientSideWebPart<ISpfxTest
     SPComponentLoader.loadCss(bootstrapCssURL);
     SPComponentLoader.loadCss(fontawesomeCssURL);
 
+    var list = "Policies"; 
+    var webUrl = this.context.pageContext.web.absoluteUrl;
+    var requestUri = "/_api/web/lists/GetByTitle('"+list+"')/items?$select=*,Folder,TaxCatchAll/ID,TaxCatchAll/Term,FieldValuesAsText/FileRef&$expand=TaxCatchAll,FieldValuesAsText,Folder";
+    var _requestHeader = { "accept" : "application/json;odata=verbose" };
+    var _contentType = "application/json;odata=verbose";
+    var query = "<View><Query><OrderBy><FieldRef Name='Knowledge_Folder' Ascending='TRUE'/></OrderBy></Query></View>";
+    var queryData = { "query" : {"__metadata": { "type": "SP.CamlQuery" }, "ViewXml":query}};
+    //this.context.pageContext.web.absoluteUrl+"/_api/web/lists/GetByTitle('"+list+"')/items?$select=*,TaxCatchAll/ID,TaxCatchAll/Term,FieldValuesAsText/FileRef&$expand=TaxCatchAll,FieldValuesAsText",
+    //_api/web/lists/getbytitle('TaxonomyHiddenList')/items?$filter=ID eq $select=ID,Title
+
     $.ajax ({
-      url:this.context.pageContext.web.absoluteUrl+"/_api/web/lists/GetByTitle('Policies')/items?$select=*,FileLeafRef,TaxCatchAll/ID,TaxCatchAll/Term&$expand=TaxCatchAll,File", //?$filter=EntityPropertyName eq 'Medicals'",
+      url: webUrl+requestUri,
       type:"GET",
-      headers:{"accept": "application/json;odata=verbose"},
+      headers : _requestHeader,
+      data: queryData,
       success: function(data) {
         console.log(data.d.results);
-        //let results=this.sortReponse(data);
         let results=data.d.results;
 
-        /*
-        let sorted = [];
-        $(results).each(function(k, v) {
-            for(var key in v) {
-                sorted.push({key: key, value: v[key]})
-            }
-        });
-        sorted.sort();
-        console.log(sorted);
-        */
-       
-        //_api/web/lists/getbytitle('TaxonomyHiddenList')/items?$filter=ID eq $select=ID,Title
+        //let sorted = [];
+        //$(results).each(function(k, v) {
+        //    for(var key in v) {
+        //        sorted.push({key: key, value: v[key]})
+        //    }
+        //});
+        //sorted.sort();
+        //sorted = results.sort("Knowledge_Folder");
+        //console.log(sorted);
+        
         $.each(results, function (index, item) {
-        //$.each(results,function(index,item){
+
           let teamWssID = item.Knowledge_Team.WssId;
-          let folderWssID = item.Knowledge_Folder.WssId;
+          folderWssID=item.Knowledge_Folder.WssId;
+          
           if(item.Knowledge_SubFolder !== null){
             //alert("data in subfolder");
             //let subfolderWssID = item.Knowledge_SubFolder.WssId;
           }
+
           let tax_len=item.TaxCatchAll.results.length;
-/*
-          for (var field in item) {
-            // If it's the field we're interested in....
-            if (item.hasOwnProperty(field) && field === ) {
-                if (obj[field] !== null) {
-                    // ... get the WssId from the field ...
-                    var thisId = obj[field].WssId;
-                    // ... and loop through the TaxCatchAll data to find the matching Term
-                    for (var i = 0; i < obj.TaxCatchAll.length; i++) {
-                        if (obj.TaxCatchAll[i].ID === thisId) {
-                            // Augment the fieldName object with the Term value
-                            obj[field].Term = obj.TaxCatchAll[i].Term;
-                            return obj[field];
-                        }
-                    }
-                }
-            }
-          }     
-*/
+
+/*          
           for (var i = 0; i < tax_len; i++) {
             //console.log("taxcatchall ID="+item.TaxCatchAll.results[i].ID);
             switch(item.TaxCatchAll.results[i].ID){
@@ -140,21 +119,27 @@ export default class SpfxTestAjaxWebPart extends BaseClientSideWebPart<ISpfxTest
                                   '</a>'+
                                 '</h4>'+
                               '</div>'+
-                            '<div id="'+ folderTxt +'" class="panel-collapse collapse in">'+
+                            '<div id="'+ folderTxt +'" class="panel-collapse collapse">'+
                               '<div class="panel-body">Document</div>'+
                             '</div>'+
-                          '</div>'                           
+                          '</div>';                           
             $('#folders').append(folderString);                                                           
             fCount++;
             folderNamePrev = folderName;
           }
+*/
         });       
       },
       error: function(Error){
         alert(JSON.stringify(Error));
       }
     }); 
-        
+    //console.log('folder length='+folderWssID.length);
+    
+    //for (var i = 0; i < folderWssID.length; i++) {
+    //  $('#folders').append(folderWssID[i]); 
+    //}
+
     this.domElement.innerHTML = `
       <div class="${ styles.spfxTestAjax }">
         <div class="${ styles.container }">
@@ -177,6 +162,7 @@ export default class SpfxTestAjaxWebPart extends BaseClientSideWebPart<ISpfxTest
                     <div class="panel-body">Pay Pal</div>
                   </div>
                 </div> 
+                
                 <div id='folders'/>                
               </div>
 
