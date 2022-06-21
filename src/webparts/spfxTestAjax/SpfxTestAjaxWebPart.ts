@@ -1,5 +1,9 @@
 import { Version } from '@microsoft/sp-core-library';
 import { SPComponentLoader } from '@microsoft/sp-loader';
+import { sp } from "@pnp/sp/presets/all";
+import "@pnp/sp/webs";
+import "@pnp/sp/lists";
+import "@pnp/sp/items";
 
 import {
   IPropertyPaneConfiguration,
@@ -16,16 +20,23 @@ import * as $ from 'jquery';
 import * as React from 'react';
 require('bootstrap');
 
+const listName = "Policies";  
+  
+/** Get all list items */  
+const listItems = sp.web.lists.getByTitle(listName).items.get();  
+console.table(listItems); 
+
 export interface ISpfxTestAjaxWebPartProps {
   description: string;
+  folderArray: string[];
 }
 
 export default class SpfxTestAjaxWebPart extends BaseClientSideWebPart<ISpfxTestAjaxWebPartProps> {
-  
+      
   public render(): void {
     let teamName = "";
     let folderName = "";
-    let folderWssID: string[];
+    let folderWssID = "";
     let subfolderName = "";
     let siteTitle = this.context.pageContext.web.title;
     var folderNamePrev = "";
@@ -49,7 +60,7 @@ export default class SpfxTestAjaxWebPart extends BaseClientSideWebPart<ISpfxTest
 
     var list = "Policies"; 
     var webUrl = this.context.pageContext.web.absoluteUrl;
-    var requestUri = "/_api/web/lists/GetByTitle('"+list+"')/items?$select=*,Folder,TaxCatchAll/ID,TaxCatchAll/Term,FieldValuesAsText/FileRef&$expand=TaxCatchAll,FieldValuesAsText,Folder";
+    var requestUri = "/_api/web/lists/GetByTitle('"+list+"')/items?$select=*,Folder/WssID,TaxCatchAll/ID,TaxCatchAll/Term,FieldValuesAsText/FileRef&$expand=TaxCatchAll,FieldValuesAsText,Folder";
     var _requestHeader = { "accept" : "application/json;odata=verbose" };
     var _contentType = "application/json;odata=verbose";
     var query = "<View><Query><OrderBy><FieldRef Name='Knowledge_Folder' Ascending='TRUE'/></OrderBy></Query></View>";
@@ -79,17 +90,31 @@ export default class SpfxTestAjaxWebPart extends BaseClientSideWebPart<ISpfxTest
         $.each(results, function (index, item) {
 
           let teamWssID = item.Knowledge_Team.WssId;
-          this.folderWssID=item.Knowledge_Folder.WssId;
+          let tax_len=item.TaxCatchAll.results.length;
+          folderWssID=item.Knowledge_Folder.WssId;
           
           if(item.Knowledge_SubFolder !== null){
             //alert("data in subfolder");
             //let subfolderWssID = item.Knowledge_SubFolder.WssId;
           }
+          
+          console.log("folder id="+folderWssID);
+          //this.properties.folderArray=folderWssID;
+          
+          
+/*
+          array.sort((a: any, b: any) => {
+            if (a[field] < b[field]) {
+              return -1;
+            } else if (a[field] > b[field]) {
+              return 1;
+            } else {
+              return 0;
+            }
+          }); 
+*/        
 
-          let tax_len=item.TaxCatchAll.results.length;
-          console.log("folder id="+this.folderWssID);
-
-/*          
+          
           for (var i = 0; i < tax_len; i++) {
             //console.log("taxcatchall ID="+item.TaxCatchAll.results[i].ID);
             switch(item.TaxCatchAll.results[i].ID){
@@ -98,6 +123,7 @@ export default class SpfxTestAjaxWebPart extends BaseClientSideWebPart<ISpfxTest
                 break;
               case folderWssID:
                 folderName = item.TaxCatchAll.results[i].Term;
+                this.properties.folderArray=folderName+";"+folderWssID;
                 break;
               //case subfolderWssID:
               //  subfolderName = item.TaxCatchAll.results[i].Term;
@@ -105,7 +131,8 @@ export default class SpfxTestAjaxWebPart extends BaseClientSideWebPart<ISpfxTest
             }
           }
           console.log("TeamName="+teamName+" Foldername="+folderName);
-          
+          console.log("folderarray="+this.properties.folderArray);
+
           if (folderName !== folderNamePrev) {
             // ***** Setup Parent Folder 
             let folderTxt =  'dcTab' + tabNum + '-Folder' + fCount;
@@ -127,19 +154,16 @@ export default class SpfxTestAjaxWebPart extends BaseClientSideWebPart<ISpfxTest
             fCount++;
             folderNamePrev = folderName;
           }
-*/
-          //count++;
-        });
-        let folderLen = this.folderWssID.length;  
-        console.log('folder length='+folderLen);     
+        });        
+        //let folderLen = this.folderWssID.length;  
+        //console.log('folder length='+folderLen);     
       },
       error: function(Error){
         alert(JSON.stringify(Error));
       }
     }); 
     
-    //folderWssID.sort();
-
+    //console.log("array="+this.properties.folderArray);
     //for (var i = 0; i < folderWssID.length; i++) {
     //  $('#folders').append(folderWssID[i]); 
     //}
